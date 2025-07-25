@@ -35,11 +35,12 @@ public partial class MainWindow : Window
         private Db Db { get; set; }
         private List<float>? ColumnLengths { get; set; }
 
-        public Visualizer(Db db, DataGrid tableGrid)
+        public Visualizer(Db db, Grid tableGrid)
         {
             Db = db;
             ColumnLengths = GetColumnWidths();
             PromptCategories(tableGrid);
+            PromptValues(tableGrid);
         }
 
         private List<float>? GetColumnWidths()
@@ -48,47 +49,72 @@ public partial class MainWindow : Window
                 return null;
 
             var columns = new List<float>();
-            var rowLength = Db.Values.Count;   
-            var colLength = Db.Values[0].Count;
+            var rowLength = Db.Values[0].Count;   
+            var colLength = Db.Values.Count;
             for(int i = 0; i< rowLength; i++)
             {
                 float avLength = 0;
                 for (int j = 0; j < Math.Min(20, colLength); j++)
                 {
-                    avLength += Db.Values[i][j].Length;
+                    avLength += Db.Values[j][i].Length;
                 }
                 avLength = avLength / Math.Min(20, colLength);
                 columns.Add(avLength);
             }
-
-            //Debug.WriteLine((string.Join("\t", columns)));
             return columns;
         }
 
-        private void PromptCategories(DataGrid tableGrid)
+        private void PromptCategories(Grid tableGrid)
         {
-            if (Db.Categories == null || Db.Categories.Count == 0 || Db.Values == null || Db.Values.Count == 0)
+            if (Db.Categories == null || Db.Categories.Count == 0 || Db.Values == null || Db.Values.Count == 0 || ColumnLengths == null)
                 return;
 
-            var table = new DataTable();
-            table.Columns.Add("Palabra");
-            table.Columns.Add("Definición");
-
-            int rowCount = Db.Values[0].Count;
-
-            for (int i = 0; i < rowCount; i++)
+            for (int i = 0; i < Db.Categories.Count; i++)
             {
-                var palabra = Db.Values[0][i];
-                var definicion = Db.Values[1].Count > i ? Db.Values[1][i] : "";
+                // Add column definition
+                tableGrid.ColumnDefinitions.Add(new ColumnDefinition
+                {
+                    Width = new GridLength(ColumnLengths[i]/ColumnLengths.Sum(), GridUnitType.Star)
+                });
 
-                var row = table.NewRow();
-                row["Palabra"] = palabra;
-                row["Definición"] = definicion;
-                table.Rows.Add(row);
+                // Create the TextBlock
+                TextBlock textBlock = new TextBlock
+                {
+                    Text = Db.Categories[i],
+                };
+
+                // Set Grid position
+                Grid.SetColumn(textBlock, i);
+
+                // Add to Grid
+                tableGrid.Children.Add(textBlock);
             }
-
-            Console.WriteLine($"[DEBUG] Filas: {table.Rows.Count}, Columnas: {table.Columns.Count}");
-            tableGrid.ItemsSource = table.DefaultView;
+        }
+        private void PromptValues(Grid tableGrid)
+        {
+            if (Db.Values == null || Db.Values.Count == 0)
+                return;
+            for (int i = 0; i < Db.Values.Count; i++)
+            {
+                for (int j = 0; j < (Db.Values[i]).Count(); j++)
+                {
+                    Border border = new Border
+                    {
+                        BorderThickness = new Thickness(0, 1, 0, 0),
+                        BorderBrush = Brushes.Gray
+                    };
+                    TextBlock textBlock = new TextBlock
+                    {
+                        Text = Db.Values[i][j],
+                        TextWrapping = TextWrapping.Wrap,
+                    };
+                    border.Child = textBlock;
+                    Grid.SetColumn(border, j);
+                    Grid.SetRow(border, i + 1);
+                    tableGrid.RowDefinitions.Add(new RowDefinition());
+                    tableGrid.Children.Add(border);
+                }
+            }
         }
     }
 
@@ -112,26 +138,8 @@ public partial class MainWindow : Window
                 ContentList = SeparateContent(Text);
                 Categories = ContentList[0][0];
                 Values = ContentList[1];
-
-                //Log the content of the class:
-                /*Debug.WriteLine("Categories:");
-                foreach (var category in Categories)
-                {
-                    Debug.WriteLine($"- {category}");
-                }
-
-                Debug.WriteLine("\nValues:");
-                for(var i = 0;i < Values[0].Count(); i++)
-                {
-                    Debug.WriteLine($"- {Values[0][i]}");
-                    for (var j = 1;j < Values.Count(); j++)
-                    {
-                        Debug.WriteLine(Values[j][i].ToString());
-                    }
-                }*/
             }
         }
-
 
         private static string? GetContent(string file)
         {
@@ -158,20 +166,16 @@ public partial class MainWindow : Window
             {
                 return [[new List<string>(), []]];
             }
-            return [[categories.Split(',').Select(s => s.Trim()).ToList()], GetValues(reader, categories.Split(',').Count())];
+            return [[categories.Split(',').Select(s => s.Trim()).ToList()], GetValues(reader)];
         }
 
 
-        private static List<List<string>> GetValues(StringReader reader, int entries)
+        private static List<List<string>> GetValues(StringReader reader)
         {
             var lines = new List<List<string>>();
             using (reader)
             {
                 string? line;
-                for (int i = 0; i < entries; i++) 
-                {
-                    lines.Add(new List<string>());
-                }
                 while ((line = reader.ReadLine()) != null)
                 {
                     List<string> row = [];
@@ -205,18 +209,12 @@ public partial class MainWindow : Window
                             }
                         }
                         row.Add(word);
-                        for(int i = 0; i< entries; i++)
-                        {
-                            lines[i].Add(row[i]);
-                        }
+                        lines.Add(row);
                     }
                     else
                     {
                         row = line.Split(',').Select(c => c.Trim()).ToList();
-                        for (int i = 0; i < entries; i++)
-                        {
-                            lines[i].Add(row[i]);
-                        }
+                        lines.Add(row);
                     }
                 }
             }

@@ -10,8 +10,13 @@
 		Background="#1A1A1A"
         Title="TableViewer">
 
-	<DataGrid Name="tableGrid"
-              AutoGenerateColumns="True"
-              HorizontalAlignment="Stretch"
-              VerticalAlignment="Stretch" />
+	<Border Margin="60,20,60,0">
+		<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" HorizontalAlignment="Stretch">
+			<Border Margin="100,60,100,60" Width="1000">
+				<Grid Name="tableGrid" HorizontalAlignment="Stretch">
+
+				</Grid>
+			</Border>
+		</ScrollViewer>
+	</Border>
 </Window>
