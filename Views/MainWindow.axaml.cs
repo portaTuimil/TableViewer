@@ -24,7 +24,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        Db db = new("Terms");
+        Db db = new("Terms2");
         Visualizer visualizer = new(db, tableGrid);
     }
 
@@ -69,25 +69,55 @@ public partial class MainWindow : Window
             if (Db.Categories == null || Db.Categories.Count == 0 || Db.Values == null || Db.Values.Count == 0 || ColumnLengths == null)
                 return;
 
-            for (int i = 0; i < Db.Categories.Count; i++)
+            int categoryCount = Db.Categories.Count;
+            int columnCount = categoryCount * 2 - 1;
+
+            for (int i = 0; i < columnCount; i++)
             {
-                // Add column definition
-                tableGrid.ColumnDefinitions.Add(new ColumnDefinition
+                if (i % 2 == 0) 
                 {
-                    Width = new GridLength(ColumnLengths[i]/ColumnLengths.Sum(), GridUnitType.Star)
-                });
+                    int logicalIndex = i / 2;
 
-                // Create the TextBlock
-                TextBlock textBlock = new TextBlock
+                    tableGrid.ColumnDefinitions.Add(new ColumnDefinition
+                    {
+                        Width = new GridLength(ColumnLengths[logicalIndex] / ColumnLengths.Sum(), GridUnitType.Star)
+                    });
+                }
+                else // Odd columns: GridSplitters
                 {
-                    Text = Db.Categories[i],
-                };
+                    tableGrid.ColumnDefinitions.Add(new ColumnDefinition
+                    {
+                        Width = new GridLength(0) // fixed width for splitter
+                    });
+                }
+            }
 
-                // Set Grid position
-                Grid.SetColumn(textBlock, i);
-
-                // Add to Grid
-                tableGrid.Children.Add(textBlock);
+            // Add children (TextBlocks and GridSplitters)
+            for (int i = 0; i < columnCount; i++)
+            {
+                if (i % 2 == 0) // TextBlock
+                {
+                    int logicalIndex = i / 2;
+                    var textBlock = new TextBlock
+                    {
+                        Text = Db.Categories[logicalIndex],
+                        Padding = new Thickness(7,0,0,0)
+                    };
+                    Grid.SetColumn(textBlock, i);
+                    tableGrid.Children.Add(textBlock);
+                }
+                else // GridSplitter
+                {
+                    var splitter = new GridSplitter
+                    {
+                        Width = 0,
+                        ResizeDirection = GridResizeDirection.Columns,
+                        ResizeBehavior = GridResizeBehavior.PreviousAndNext,
+                        Background = Brushes.Transparent,
+                    };
+                    Grid.SetColumn(splitter, i);
+                    tableGrid.Children.Add(splitter);
+                }
             }
         }
         private void PromptValues(Grid tableGrid)
@@ -98,20 +128,39 @@ public partial class MainWindow : Window
             {
                 for (int j = 0; j < (Db.Values[i]).Count(); j++)
                 {
-                    Border border = new Border
+                    Border border;
+                    if(j == Db.Values[0].Count-1)
                     {
-                        BorderThickness = new Thickness(0, 1, 0, 0),
-                        BorderBrush = Brushes.Gray
-                    };
+                        border = new Border
+                        {
+                            BorderThickness = new Thickness(0, 0.4, 0, 0),
+                            BorderBrush = new SolidColorBrush(Color.Parse("#66AAAACC")),
+                            Padding = new Thickness(7, 5)
+                        };
+                    }
+                    else
+                    {
+                        border = new Border
+                        {
+                            BorderThickness = new Thickness(0, 0.4, 0.4, 0),
+                            BorderBrush = new SolidColorBrush(Color.Parse("#66AAAACC")),
+                            Padding = new Thickness(7, 5)
+                        };
+                    }
+
                     TextBlock textBlock = new TextBlock
                     {
                         Text = Db.Values[i][j],
                         TextWrapping = TextWrapping.Wrap,
+                        Height = 20,
                     };
                     border.Child = textBlock;
-                    Grid.SetColumn(border, j);
-                    Grid.SetRow(border, i + 1);
-                    tableGrid.RowDefinitions.Add(new RowDefinition());
+                    Grid.SetColumn(border, 2*j);
+                    Grid.SetRow(border, i +1);
+                    tableGrid.RowDefinitions.Add(new RowDefinition
+                    {
+                        Height = new GridLength(30),
+                    });
                     tableGrid.Children.Add(border);
                 }
             }
