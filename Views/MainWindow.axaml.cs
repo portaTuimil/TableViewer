@@ -35,6 +35,7 @@ public partial class MainWindow : Window
     {
         private Db Db { get; set; }
         private List<float>? ColumnLengths { get; set; }
+        private bool _isSyncingScroll = false;
 
         public Visualizer(Db db, Grid tableGrid)
         {
@@ -64,6 +65,26 @@ public partial class MainWindow : Window
             }
             return columns;
         }
+
+
+        private void SyncScrollViewer(ScrollViewer source, List<ScrollViewer> targets)
+        {
+            source.ScrollChanged += (s, e) =>
+            {
+                if (_isSyncingScroll) return;
+
+                _isSyncingScroll = true;
+                foreach (var target in targets)
+                {
+                    if (target != source)
+                    {
+                        target.Offset = new Vector(target.Offset.X, source.Offset.Y);
+                    }
+                }
+                _isSyncingScroll = false;
+            };
+        }
+
 
         private void PromptCategories(Grid tableGrid)
         {
@@ -121,6 +142,8 @@ public partial class MainWindow : Window
                 }
             }
         }
+
+
         private void PromptValues(Grid tableGrid)
         {
             if (Db.Values == null || Db.Values.Count == 0 || Db.Categories == null)
@@ -131,11 +154,23 @@ public partial class MainWindow : Window
             List<ScrollViewer> innerViewers = new List<ScrollViewer>();
             for (int i = 0; i < categoryCount; i++)
             {
-                ScrollViewer scrollviewer = new ScrollViewer
+                ScrollViewer scrollviewer;
+                if (i == Db.Values[i].Count - 1)
                 {
-                    VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
-                };
+                    scrollviewer = new ScrollViewer
+                    {
+                        VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+                    };
+                }
+                else
+                {
+                    scrollviewer = new ScrollViewer
+                    {
+                        VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden,
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+                    };
+                }
 
                 Grid grid = new Grid();
 
@@ -146,6 +181,11 @@ public partial class MainWindow : Window
 
                 scrollviewer.Content = grid;
                 innerViewers.Add(scrollviewer);
+            }
+
+            foreach (var viewer in innerViewers)
+            {
+                SyncScrollViewer(viewer, innerViewers);
             }
 
 
