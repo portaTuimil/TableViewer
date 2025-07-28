@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using DynamicData;
 using DynamicData.Aggregation;
@@ -122,14 +123,38 @@ public partial class MainWindow : Window
         }
         private void PromptValues(Grid tableGrid)
         {
-            if (Db.Values == null || Db.Values.Count == 0)
+            if (Db.Values == null || Db.Values.Count == 0 || Db.Categories == null)
                 return;
-            for (int i = 0; i < Db.Values.Count; i++)
+
+            int categoryCount = Db.Categories.Count;
+
+            List<ScrollViewer> innerViewers = new List<ScrollViewer>();
+            for (int i = 0; i < categoryCount; i++)
             {
-                for (int j = 0; j < (Db.Values[i]).Count(); j++)
+                ScrollViewer scrollviewer = new ScrollViewer
+                {
+                    VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+                };
+
+                Grid grid = new Grid();
+
+                for (int r = 0; r < Db.Values.Count; r++)
+                {
+                    grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(30) });
+                }
+
+                scrollviewer.Content = grid;
+                innerViewers.Add(scrollviewer);
+            }
+
+
+            for (int row = 0; row < Db.Values.Count; row++)
+            {
+                for (int col = 0; col < Db.Values[row].Count; col++)
                 {
                     Border border;
-                    if(j == Db.Values[0].Count-1)
+                    if (col == Db.Values[row].Count - 1)
                     {
                         border = new Border
                         {
@@ -150,19 +175,27 @@ public partial class MainWindow : Window
 
                     TextBlock textBlock = new TextBlock
                     {
-                        Text = Db.Values[i][j],
+                        Text = Db.Values[row][col],
                         TextWrapping = TextWrapping.Wrap,
                         Height = 20,
+                        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                     };
                     border.Child = textBlock;
-                    Grid.SetColumn(border, 2*j);
-                    Grid.SetRow(border, i +1);
-                    tableGrid.RowDefinitions.Add(new RowDefinition
+
+                    Grid innerGrid = innerViewers[col].Content as Grid;
+                    if (innerGrid != null)
                     {
-                        Height = new GridLength(30),
-                    });
-                    tableGrid.Children.Add(border);
+                        Grid.SetRow(border, row);
+                        Grid.SetColumn(border, 0); 
+                        innerGrid.Children.Add(border);
+                    }
                 }
+            }
+
+            for (int i = 0; i < innerViewers.Count;i++)
+            {
+                Grid.SetColumn(innerViewers[i], 2*i);
+                tableGrid.Children.Add(innerViewers[i]);
             }
         }
     }

@@ -11,12 +11,10 @@
         Title="TableViewer">
 
 	<Border Margin="120,60,120,20">
-		<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch">
-			<Border Margin="0,0,10,0">
-				<Grid Name="tableGrid" HorizontalAlignment="Stretch">
+		<Border Margin="0,0,10,0">
+			<Grid Name="tableGrid" HorizontalAlignment="Stretch">
 
-				</Grid>
-			</Border>
-		</ScrollViewer>
+			</Grid>
+		</Border>
 	</Border>
 </Window>
